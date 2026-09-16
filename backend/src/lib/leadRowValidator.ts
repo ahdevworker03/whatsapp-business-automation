@@ -1,6 +1,14 @@
 import { InvalidPhoneNumberError, normalizePhoneNumber } from "./phone";
 import type { ParsedLeadRow } from "./leadFileParser";
 
+// This deployment's only client is UK-based, so a phone number with no "+"
+// (a national-format number, e.g. Excel-stripped-leading-zero "7841966039")
+// is safely assumed to be a UK number rather than rejected as ambiguous.
+// This is a client-specific assumption, not a general one — do not reuse this
+// constant, or hardcode "GB" elsewhere, if this codebase is ever adapted for
+// a client outside the UK.
+export const IMPORT_DEFAULT_COUNTRY = "GB";
+
 // Validates and deduplicates Step 3's parsed rows before persistence (Step 5).
 // `leads.phone` is the only required/unique field on the Lead model (name and
 // business_name are nullable) — see docs/architecture/04-database-design.md.
@@ -56,7 +64,7 @@ export function validateLeadRows(
 
     let normalizedPhone: string;
     try {
-      normalizedPhone = normalizePhoneNumber(row.phone);
+      normalizedPhone = normalizePhoneNumber(row.phone, IMPORT_DEFAULT_COUNTRY);
     } catch (error) {
       const reason = error instanceof InvalidPhoneNumberError ? error.message : "Invalid phone number";
       invalid.push({ row, reason });

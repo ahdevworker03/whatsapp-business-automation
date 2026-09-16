@@ -135,6 +135,7 @@ At any stage: delivery failure → FAILED
 
 - Only one campaign can have status ACTIVE at a time. Enforced in application logic.
 - Phone numbers are stored in E.164 format. Normalization happens at import time.
+- Import normalization assumes GB (UK) as the default country for any phone number with no leading `+` (e.g. "07841966039", "7841966039" with a stripped leading zero, or "7537 149707" with no country code at all) — safe because this deployment's only client is UK-based. This is a client-specific assumption, not a general one; see `backend/src/lib/leadRowValidator.ts`'s `IMPORT_DEFAULT_COUNTRY` and its comment before reusing this codebase for a non-UK client.
 - The settings table always has exactly one row.
 - automation_stopped on conversations is set to true when a human reply is received. The scheduler checks this before sending any follow-up.
 - is_auto_reply on a message is set by the auto-reply detection logic in the webhook handler, not by the user.

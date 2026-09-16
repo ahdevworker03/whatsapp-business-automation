@@ -22,6 +22,34 @@ describe("normalizePhoneNumber", () => {
     expect(normalizePhoneNumber("(415) 555-2671", "US")).toBe("+14155552671");
   });
 
+  it("normalizes a UK number with punctuation and no leading 0, given GB", () => {
+    expect(normalizePhoneNumber("(44784) 196-6039", "GB")).toBe("+447841966039");
+  });
+
+  it("normalizes a UK number missing its '+' but with the '44' country code, given GB", () => {
+    expect(normalizePhoneNumber("447841966039", "GB")).toBe("+447841966039");
+  });
+
+  it("normalizes a UK national number with its leading 0, given GB", () => {
+    expect(normalizePhoneNumber("07841966039", "GB")).toBe("+447841966039");
+  });
+
+  it("normalizes a UK national number with the leading 0 stripped (Excel numeric-cell case), given GB", () => {
+    expect(normalizePhoneNumber("7841966039", "GB")).toBe("+447841966039");
+  });
+
+  it("normalizes an ambiguous 10-digit number as UK national format, given GB", () => {
+    expect(normalizePhoneNumber("7537 149707", "GB")).toBe("+447537149707");
+  });
+
+  it("still rejects a too-short number even with GB given", () => {
+    expect(() => normalizePhoneNumber("12345", "GB")).toThrow(InvalidPhoneNumberError);
+  });
+
+  it("still rejects non-numeric garbage even with GB given", () => {
+    expect(() => normalizePhoneNumber("not a phone number", "GB")).toThrow(InvalidPhoneNumberError);
+  });
+
   it("normalizes a different country's number", () => {
     expect(normalizePhoneNumber("+44 20 7946 0958")).toBe("+442079460958");
   });

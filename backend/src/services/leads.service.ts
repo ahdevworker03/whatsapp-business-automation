@@ -2,7 +2,7 @@ import { LeadStatus } from "@prisma/client";
 import * as repo from "../repositories/leads.repository";
 import { parseLeadsCsv, parseLeadsExcel } from "../lib/leadFileParser";
 import { normalizePhoneNumber } from "../lib/phone";
-import { validateLeadRows } from "../lib/leadRowValidator";
+import { IMPORT_DEFAULT_COUNTRY, validateLeadRows } from "../lib/leadRowValidator";
 
 // Business errors the leads domain can raise. Controllers (Step 6) map these
 // to HTTP status codes; this layer only decides that they're errors, per
@@ -66,7 +66,7 @@ export async function importLeads(file: Buffer, fileName: string): Promise<Impor
         return undefined;
       }
       try {
-        return normalizePhoneNumber(row.phone);
+        return normalizePhoneNumber(row.phone, IMPORT_DEFAULT_COUNTRY);
       } catch {
         return undefined;
       }

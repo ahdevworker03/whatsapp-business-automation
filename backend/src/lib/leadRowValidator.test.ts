@@ -17,6 +17,20 @@ describe("validateLeadRows", () => {
     expect(result.duplicates).toEqual([]);
   });
 
+  it.each([
+    ["punctuated, no leading 0", "(44784) 196-6039"],
+    ["no '+', with '44' country code", "447841966039"],
+    ["national format with leading 0", "07841966039"],
+    ["Excel-stripped leading 0", "7841966039"],
+  ])("normalizes a UK number sent as %s to the same E.164 number", (_label, phone) => {
+    const rows: ParsedLeadRow[] = [{ name: "Lead", phone }];
+
+    const result = validateLeadRows(rows, new Set());
+
+    expect(result.valid).toEqual([{ phone: "+447841966039", name: "Lead" }]);
+    expect(result.invalid).toEqual([]);
+  });
+
   it("rejects a row with a missing phone number, and counts it", () => {
     const rows: ParsedLeadRow[] = [{ name: "No Phone" }];
 
