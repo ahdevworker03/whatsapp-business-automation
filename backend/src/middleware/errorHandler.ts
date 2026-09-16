@@ -104,6 +104,13 @@ export function errorHandler(
       res.status(409).json({ error: "A record with this value already exists." });
       return;
     }
+    // Foreign key constraint violation (e.g. deleting a row other records
+    // still reference) is a conflict with existing data, not a server fault
+    // — 409, not a bare 500 that hides the real cause from the client.
+    if (err.code === "P2003") {
+      res.status(409).json({ error: "Cannot delete: referenced by existing records." });
+      return;
+    }
     res.status(500).json({ error: "Database error." });
     return;
   }

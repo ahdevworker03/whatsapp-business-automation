@@ -71,6 +71,25 @@ async function main() {
     );
   }
 
+  // Shared by steps 8-9 below, both of which need a message row and thus a
+  // campaign_id to satisfy messages.campaign_id's required FK.
+  let campaignForFixture = await prisma.campaign.findFirst();
+  let createdFixtureCampaign = false;
+  if (!campaignForFixture) {
+    campaignForFixture = await prisma.campaign.create({
+      data: {
+        name: "verify-leads-service fixture campaign",
+        status: "DRAFT",
+        initialTemplateId: "verify_template",
+        followup1TemplateId: "verify_template",
+        followup1DelayHours: 24,
+        followup2TemplateId: "verify_template",
+        followup2DelayHours: 48,
+      },
+    });
+    createdFixtureCampaign = true;
+  }
+
   console.log("8. deleteLead() on a CONTACTED lead throws LeadAlreadyContactedError...");
   const contactedImport = await leadsService.importLeads(
     Buffer.from("Name,Phone\nContacted Lead,+442079460958\n"),
@@ -78,6 +97,20 @@ async function main() {
   );
   assert(contactedImport.imported === 1, "setup: expected the contacted-lead fixture to import");
   const contactedLead = await prisma.lead.findUniqueOrThrow({ where: { phone: "+442079460958" } });
+  // Mirrors what sendInitialTemplate actually does (messages.service.ts:141-150):
+  // create the outbound message, then mark the lead CONTACTED — never the
+  // status flip alone. A CONTACTED lead with no message row doesn't occur in
+  // real data, so the fixture shouldn't manufacture that shape either.
+  await prisma.message.create({
+    data: {
+      leadId: contactedLead.id,
+      campaignId: campaignForFixture.id,
+      direction: "OUTBOUND",
+      type: "TEMPLATE",
+      content: "verify-leads-service fixture message",
+      status: "SENT",
+    },
+  });
   await prisma.lead.update({ where: { id: contactedLead.id }, data: { status: "CONTACTED" } });
   try {
     await leadsService.deleteLead(contactedLead.id);
@@ -89,11 +122,53 @@ async function main() {
     );
   }
 
+  console.log(
+    "9. deleteLead() on a NEW lead with message/conversation history throws LeadAlreadyContactedError (bug repro: webhook.repository.ts's upsertLeadByPhone creates exactly this state)..."
+  );
+  const inboundOnlyImport = await leadsService.importLeads(
+    Buffer.from("Name,Phone\nInbound Only,+12125551234\n"),
+    "verify-inbound-only.csv"
+  );
+  assert(inboundOnlyImport.imported === 1, "setup: expected the inbound-only-lead fixture to import");
+  const inboundOnlyLead = await prisma.lead.findUniqueOrThrow({ where: { phone: "+12125551234" } });
+  assert(inboundOnlyLead.status === "NEW", "setup: expected the fixture lead to still be NEW");
+
+  await prisma.conversation.create({
+    data: { leadId: inboundOnlyLead.id, status: "ACTIVE", lastMessageAt: new Date() },
+  });
+  await prisma.message.create({
+    data: {
+      leadId: inboundOnlyLead.id,
+      campaignId: campaignForFixture.id,
+      direction: "INBOUND",
+      type: "TEXT",
+      content: "verify-leads-service fixture message",
+      status: "RECEIVED",
+    },
+  });
+
+  try {
+    await leadsService.deleteLead(inboundOnlyLead.id);
+    throw new Error("expected deleteLead to throw for a NEW lead with contact history");
+  } catch (error) {
+    assert(
+      error instanceof leadsService.LeadAlreadyContactedError,
+      `expected LeadAlreadyContactedError, got ${error}`
+    );
+  }
+  const stillThere = await leadsService.getLeadById(inboundOnlyLead.id);
+  assert(stillThere !== null, "expected the lead to survive the rejected delete");
+
   console.log("\nAll direct-call checks passed.");
 
   console.log("\nCleaning up rows created by this script...");
+  await prisma.message.deleteMany({ where: { leadId: { in: [contactedLead.id, inboundOnlyLead.id] } } });
+  await prisma.conversation.deleteMany({ where: { leadId: inboundOnlyLead.id } });
+  if (createdFixtureCampaign) {
+    await prisma.campaign.delete({ where: { id: campaignForFixture.id } });
+  }
   await prisma.lead.deleteMany({
-    where: { phone: { in: ["+14155552671", "+442079460958"] } },
+    where: { phone: { in: ["+14155552671", "+442079460958", "+12125551234"] } },
   });
 }
 

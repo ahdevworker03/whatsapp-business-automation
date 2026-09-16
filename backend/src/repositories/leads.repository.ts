@@ -89,6 +89,20 @@ export function findLeadById(id: string) {
   });
 }
 
+// Delete guard (M3 code-review fix): status alone doesn't tell us whether a
+// lead is safe to delete — webhook.repository.ts's upsertLeadByPhone creates
+// a Lead (status NEW) plus Message/Conversation rows for an inbound message
+// from a number we never contacted, so a NEW lead can still have real
+// history. The actual constraint deleteLeadById needs to respect is whether
+// any Message or Conversation row references this lead_id.
+export async function hasContactHistory(id: string): Promise<boolean> {
+  const [messageCount, conversation] = await Promise.all([
+    prisma.message.count({ where: { leadId: id } }),
+    prisma.conversation.findUnique({ where: { leadId: id }, select: { id: true } }),
+  ]);
+  return messageCount > 0 || conversation !== null;
+}
+
 export function deleteLeadById(id: string) {
   return prisma.lead.delete({ where: { id } });
 }

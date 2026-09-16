@@ -109,15 +109,21 @@ export async function getLeadById(id: string) {
 }
 
 // "Not allowed if lead has been contacted" (docs/architecture/05-api-design.md
-// section 3) — a lead's status only ever leaves NEW once the initial
-// template has been sent (docs/architecture/04-database-design.md's status
-// lifecycle), so NEW is the only status a delete is allowed against.
+// section 3). Originally checked `status !== "NEW"`, but status is the wrong
+// signal: webhook.repository.ts's upsertLeadByPhone creates a Lead with
+// status NEW (plus Message/Conversation rows) for an inbound message from a
+// number we never contacted, so a NEW lead can already have real history.
+// Checking for that history directly (repo.hasContactHistory) is what
+// actually decides "contacted" here, and is also what deleteLeadById would
+// otherwise fail on at the database level (messages_lead_id_fkey /
+// conversations_lead_id_fkey) — this makes that the documented, deliberate
+// business rule instead of a fallen-through Postgres error.
 export async function deleteLead(id: string): Promise<void> {
   const lead = await repo.findLeadById(id);
   if (!lead) {
     throw new LeadNotFoundError(id);
   }
-  if (lead.status !== "NEW") {
+  if (await repo.hasContactHistory(id)) {
     throw new LeadAlreadyContactedError(id);
   }
 

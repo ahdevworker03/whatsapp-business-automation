@@ -32,6 +32,15 @@ export default function LeadsPage() {
   const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
+  // Auto-dismiss so a blocked-delete message never sticks around
+  // indefinitely with no way to clear it — starting a new delete attempt
+  // (handleDelete's own setDeleteError(null)) also clears it immediately.
+  useEffect(() => {
+    if (!deleteError) return
+    const timeout = setTimeout(() => setDeleteError(null), 5000)
+    return () => clearTimeout(timeout)
+  }, [deleteError])
+
   const loadLeads = useCallback(() => {
     setLoading(true)
     setError('')
@@ -187,17 +196,24 @@ export default function LeadsPage() {
                       <td><StatusBadge status={lead.status} /></td>
                       <td className="muted-cell">{new Date(lead.createdAt).toLocaleDateString()}</td>
                       <td className="col-actions" title={contacted ? 'Cannot delete a contacted lead' : ''}>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          disabled={contacted || deletingId === lead.id}
-                          onClick={() => handleDelete(lead)}
-                        >
-                          {deletingId === lead.id ? 'Deleting...' : 'Delete'}
-                        </Button>
-                        {deleteError?.id === lead.id && (
-                          <div className="alert alert-error inline-alert">{deleteError.message}</div>
-                        )}
+                        <div className="delete-action">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={contacted || deletingId === lead.id}
+                            onClick={() => handleDelete(lead)}
+                          >
+                            {deletingId === lead.id ? 'Deleting...' : 'Delete'}
+                          </Button>
+                          {/* Fixed-height slot, always rendered (empty when idle), so
+                              showing/clearing this message never changes row height —
+                              avoids reflowing the rows below (and getting clipped by
+                              .panel's overflow:hidden, which an absolutely-positioned
+                              popover would risk for rows near the table's edges). */}
+                          <div className="delete-action-message" aria-live="polite" title={deleteError?.id === lead.id ? deleteError.message : undefined}>
+                            {deleteError?.id === lead.id ? deleteError.message : ''}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   )
