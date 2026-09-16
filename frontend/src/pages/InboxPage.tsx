@@ -204,6 +204,11 @@ function ConversationDetailView({
 
   const messages = conversation.lead.messages
   const withinWindow = conversation.withinCustomerServiceWindow
+  // Mirrors inbox.service.ts's replyToConversation: CLOSED is the more
+  // fundamental block, checked ahead of (and independent of) the 24h window
+  // — a conversation can be CLOSED and still within-window.
+  const isClosed = conversation.status === 'CLOSED'
+  const replyBlocked = isClosed || !withinWindow
 
   return (
     <div className="conversation-detail">
@@ -246,12 +251,17 @@ function ConversationDetailView({
       </div>
 
       <div className="reply-footer">
-        {!withinWindow && (
+        {isClosed ? (
+          <div className="alert alert-warning inline-warning">
+            <span className="inline-warning-icon"><WarnIcon /></span>
+            <span>This conversation is closed. Reopen it by receiving a new message from the lead.</span>
+          </div>
+        ) : !withinWindow ? (
           <div className="alert alert-warning inline-warning">
             <span className="inline-warning-icon"><WarnIcon /></span>
             <span>Reply window closed — you can only reply within 24 hours of the lead's last message.</span>
           </div>
-        )}
+        ) : null}
         <form onSubmit={handleReply} className="reply-box">
           <textarea
             id="reply-text"
@@ -260,10 +270,10 @@ function ConversationDetailView({
             placeholder="Type a reply…"
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
-            disabled={sending || !withinWindow}
+            disabled={sending || replyBlocked}
             className="reply-textarea"
           />
-          <Button type="submit" variant="primary" disabled={sending || !withinWindow || !replyText.trim()}>
+          <Button type="submit" variant="primary" disabled={sending || replyBlocked || !replyText.trim()}>
             {sending ? 'Sending...' : 'Send'}
           </Button>
         </form>

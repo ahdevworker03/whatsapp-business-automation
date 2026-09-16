@@ -27,6 +27,25 @@ export class OutsideCustomerServiceWindowError extends Error {
   }
 }
 
+// Verification findings doc 2026-09-16, item 15: replyToConversation used to
+// check only the 24-hour window, so a CLOSED conversation still inside its
+// window would accept a reply. Per docs/architecture/04-database-design.md,
+// ConversationStatus.CLOSED means "handled, no further action needed" —
+// that's a stronger, independent block than the window, not implied by it
+// (a conversation can be CLOSED and still within-window, exactly the gap
+// this closes). Reactivation is untouched: an inbound message still flips a
+// CLOSED conversation back to ACTIVE via webhook.repository.ts's
+// upsertConversationForLead (M5), so this is not a permanent lock-out.
+export class ConversationClosedError extends Error {
+  constructor(conversationId: string) {
+    super(
+      `Conversation ${conversationId} is CLOSED and cannot receive a reply. ` +
+        "It will reopen automatically if the lead sends a new message."
+    );
+    this.name = "ConversationClosedError";
+  }
+}
+
 export interface ListConversationsParams {
   status?: ConversationStatus;
   page?: number;
@@ -95,6 +114,13 @@ export async function replyToConversation(conversationId: string, message: strin
   const conversation = await repo.findConversationWithLead(conversationId);
   if (!conversation) {
     throw new ConversationNotFoundError(conversationId);
+  }
+
+  // Checked before the window — CLOSED is the more fundamental block (a
+  // deliberate "done" state), independent of whether the window happens to
+  // still be open.
+  if (conversation.status === "CLOSED") {
+    throw new ConversationClosedError(conversationId);
   }
 
   const lastInbound = await repo.findMostRecentInboundMessage(conversation.lead.id);
