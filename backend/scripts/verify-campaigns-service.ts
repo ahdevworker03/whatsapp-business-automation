@@ -101,6 +101,47 @@ async function main() {
     );
   }
 
+  // Bug repro + fix verification (verification findings doc 2026-09-16, item
+  // 6): getCurrentCampaign() used to only fall back to the latest DRAFT when
+  // nothing is ACTIVE, so a PAUSED campaign — reachable only by pausing an
+  // ACTIVE one, exactly what the app's own UI tells you to do before editing
+  // — became permanently invisible to GET /api/v1/campaign the moment it was
+  // paused. `second` is ACTIVE and `created` is PAUSED at this point.
+  console.log("10. getCurrentCampaign() returns the ACTIVE campaign when one exists...");
+  const currentWithActive = await campaignsService.getCurrentCampaign();
+  assert(currentWithActive?.id === second.id, `expected ${second.id} (ACTIVE), got ${currentWithActive?.id}`);
+
+  console.log(
+    "11. getCurrentCampaign() falls back to a PAUSED campaign (not just DRAFT) when nothing is ACTIVE — the bug this fixes..."
+  );
+  await campaignsService.setCampaignStatus(second.id, "PAUSED");
+  // Touch `created`'s updatedAt so it's unambiguously the more recently
+  // updated of the two PAUSED campaigns.
+  await campaignsService.updateCampaign(created.id, { dailyLimit: 99 });
+  const currentPausedFallback = await campaignsService.getCurrentCampaign();
+  assert(
+    currentPausedFallback?.id === created.id,
+    `expected the fallback to prefer the more recently updated PAUSED campaign (${created.id}), got ${currentPausedFallback?.id}`
+  );
+
+  console.log("12. ACTIVE still always wins over a more-recently-updated PAUSED campaign...");
+  const secondReactivated = await campaignsService.setCampaignStatus(second.id, "ACTIVE");
+  assert(secondReactivated.status === "ACTIVE", `expected ACTIVE, got ${secondReactivated.status}`);
+  const currentActiveWins = await campaignsService.getCurrentCampaign();
+  assert(
+    currentActiveWins?.id === second.id,
+    `expected ACTIVE campaign ${second.id} to win regardless of updatedAt recency, got ${currentActiveWins?.id}`
+  );
+
+  console.log("13. ARCHIVED campaigns remain excluded from the fallback, even if most recently updated...");
+  await campaignsService.setCampaignStatus(second.id, "PAUSED");
+  await campaignsService.setCampaignStatus(created.id, "ARCHIVED");
+  const currentSkipsArchived = await campaignsService.getCurrentCampaign();
+  assert(
+    currentSkipsArchived?.id === second.id,
+    `expected the ARCHIVED campaign (${created.id}) to be skipped in favor of the PAUSED one (${second.id}), got ${currentSkipsArchived?.id}`
+  );
+
   console.log("\nAll direct-call checks passed.");
 
   console.log("\nCleaning up rows created by this script...");

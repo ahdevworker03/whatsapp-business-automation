@@ -69,7 +69,11 @@ export default function InboxPage() {
             {listLoading ? (
               <p className="inbox-list-message">Loading...</p>
             ) : conversations.length === 0 ? (
-              <p className="inbox-list-message">No conversations found.</p>
+              <div className="panel-empty-state">
+                <div className="panel-empty-icon"><EmptyChatIcon /></div>
+                <div className="panel-empty-title">No conversations found</div>
+                <div className="panel-empty-subtitle">Conversations appear here once a lead has messaged in or been contacted.</div>
+              </div>
             ) : (
               <ul className="conversation-list">
                 {conversations.map((conv) => (

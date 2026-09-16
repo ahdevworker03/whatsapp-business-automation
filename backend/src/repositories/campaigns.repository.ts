@@ -51,13 +51,21 @@ export function findActiveCampaign() {
   return prisma.campaign.findFirst({ where: { status: "ACTIVE" } });
 }
 
-// Fallback for GET /api/v1/campaign when no campaign is ACTIVE: the most
-// recently created DRAFT campaign, per docs/architecture/05-api-design.md
-// section 4 ("Get the current active or draft campaign configuration").
-export function findLatestDraftCampaign() {
+// Fallback for GET /api/v1/campaign when no campaign is ACTIVE (code-review
+// fix, verification findings doc 2026-09-16, item 6): the most recently
+// *updated* campaign among DRAFT and PAUSED. Originally DRAFT-only, per a
+// narrow reading of docs/architecture/05-api-design.md section 4's "Get the
+// current active or draft campaign configuration" — but that reading made a
+// PAUSED campaign permanently unreachable through the app the moment it was
+// paused, even though the app's own UI instructs pausing before editing
+// ("Pause this campaign before editing its configuration."). ARCHIVED stays
+// excluded — that status is still meant as "no longer current." Ordered by
+// updatedAt (not createdAt) so pausing/editing a campaign keeps it "current"
+// over an older, untouched DRAFT.
+export function findLatestReachableCampaign() {
   return prisma.campaign.findFirst({
-    where: { status: "DRAFT" },
-    orderBy: { createdAt: "desc" },
+    where: { status: { in: ["DRAFT", "PAUSED"] } },
+    orderBy: { updatedAt: "desc" },
   });
 }
 

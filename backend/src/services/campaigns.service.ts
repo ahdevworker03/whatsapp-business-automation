@@ -63,17 +63,21 @@ export async function createCampaign(input: CreateCampaignInput) {
 }
 
 // docs/architecture/05-api-design.md section 4: "Get the current active or
-// draft campaign configuration." ACTIVE takes priority; if none is ACTIVE,
-// fall back to the most recently created DRAFT campaign. Returns null if
-// neither exists (no campaign at all) — not documented as an explicit case,
-// but the placeholder row from M2 means this is not expected to bite in
-// practice; the controller (Step 2) maps null to 404.
+// draft campaign configuration." ACTIVE always takes priority when one
+// exists. Otherwise, falls back to the most recently updated campaign among
+// DRAFT and PAUSED (code-review fix, verification findings doc 2026-09-16,
+// item 6) — originally DRAFT-only, which made a PAUSED campaign vanish from
+// the app the moment it was paused, with no other view to find it again.
+// ARCHIVED is still excluded: that status is meant as "no longer current."
+// Returns null if neither exists (no campaign at all) — not documented as an
+// explicit case, but the placeholder row from M2 means this is not expected
+// to bite in practice; the controller (Step 2) maps null to 404.
 export async function getCurrentCampaign() {
   const active = await repo.findActiveCampaign();
   if (active) {
     return active;
   }
-  return repo.findLatestDraftCampaign();
+  return repo.findLatestReachableCampaign();
 }
 
 export interface UpdateCampaignInput {
