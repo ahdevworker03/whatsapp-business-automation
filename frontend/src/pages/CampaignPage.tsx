@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError, Campaign, CampaignFormInput, Lead, Message } from '../api'
+import StatusBadge from '../components/StatusBadge'
+import Button from '../components/Button'
+import { WarnIcon } from '../components/icons'
 
 const EMPTY_FORM: CampaignFormInput = {
   name: '',
@@ -152,16 +155,24 @@ export default function CampaignPage() {
 
   if (loading) {
     return (
-      <div>
-        <h1>Campaign</h1>
+      <div className="page-max-campaign">
+        <div className="page-header">
+          <h1>Campaign</h1>
+          <div className="page-subtitle">Configure your outreach sequence</div>
+        </div>
         <p>Loading...</p>
       </div>
     )
   }
 
+  const campaignIsActive = campaign?.status === 'ACTIVE'
+
   return (
-    <div>
-      <h1>Campaign</h1>
+    <div className="page-max-campaign">
+      <div className="page-header">
+        <h1>Campaign</h1>
+        <div className="page-subtitle">Configure your outreach sequence</div>
+      </div>
 
       {loadError && <div className="alert alert-error">{loadError}</div>}
 
@@ -177,83 +188,94 @@ export default function CampaignPage() {
         />
       ) : (
         <>
-          {!campaign && <p>No campaign configured yet.</p>}
+          <section className="panel campaign-card">
+            {!campaign && <p className="hint-text-standalone">No campaign configured yet.</p>}
 
-          {campaign && (
-            <section className="campaign-summary">
-              {!isCurrent && (
-                <div className="alert alert-warning">
-                  This is a new draft, not the current campaign yet — it only becomes current once activated.{' '}
-                  <button className="button-secondary" onClick={loadCampaign}>View Current Campaign</button>
-                </div>
-              )}
-
-              <div className="campaign-summary-header">
-                <h2>{campaign.name}</h2>
-                <span className={`status-badge status-${campaign.status.toLowerCase()}`}>
-                  {campaign.status}
-                </span>
-              </div>
-
-              <dl className="campaign-details">
-                <dt>Initial Template</dt>
-                <dd>{campaign.initialTemplateId}</dd>
-                <dt>Follow-up 1 Template</dt>
-                <dd>{campaign.followup1TemplateId} (after {campaign.followup1DelayHours}h)</dd>
-                <dt>Follow-up 2 Template</dt>
-                <dd>{campaign.followup2TemplateId} (after {campaign.followup2DelayHours}h)</dd>
-                <dt>Daily Limit</dt>
-                <dd>{campaign.dailyLimit} messages/day</dd>
-              </dl>
-
-              <div className="campaign-actions">
-                <button
-                  className="button-secondary"
-                  disabled={campaign.status === 'ACTIVE'}
-                  onClick={startEdit}
-                >
-                  Edit
-                </button>
-                {campaign.status === 'ACTIVE' ? (
-                  <button
-                    disabled={statusActionPending}
-                    onClick={() => handleStatusChange('PAUSED')}
-                  >
-                    {statusActionPending ? 'Pausing...' : 'Pause'}
-                  </button>
-                ) : (
-                  <button
-                    disabled={statusActionPending}
-                    onClick={() => handleStatusChange('ACTIVE')}
-                  >
-                    {statusActionPending ? 'Activating...' : 'Activate'}
-                  </button>
+            {campaign && (
+              <>
+                {!isCurrent && (
+                  <div className="alert alert-warning">
+                    This is a new draft, not the current campaign yet — it only becomes current once activated.{' '}
+                    <button className="link-button" onClick={loadCampaign}>View Current Campaign</button>
+                  </div>
                 )}
-                <button className="button-secondary" onClick={startCreate}>
-                  Start New Campaign
-                </button>
-              </div>
 
-              {campaign.status === 'ACTIVE' && (
-                <p className="hint-text">Pause this campaign before editing its configuration.</p>
-              )}
+                <div className="campaign-summary-header">
+                  <h2>{campaign.name}</h2>
+                  <StatusBadge status={campaign.status} />
+                </div>
 
-              {statusActionError && <div className="alert alert-error">{statusActionError}</div>}
-            </section>
-          )}
+                <dl className="campaign-details">
+                  <div className="campaign-detail-item">
+                    <dt>Initial Template</dt>
+                    <dd className="mono-value">{campaign.initialTemplateId}</dd>
+                  </div>
+                  <div className="campaign-detail-item">
+                    <dt>Follow-up 1 Template</dt>
+                    <dd className="mono-value">{campaign.followup1TemplateId} (after {campaign.followup1DelayHours}h)</dd>
+                  </div>
+                  <div className="campaign-detail-item">
+                    <dt>Follow-up 2 Template</dt>
+                    <dd className="mono-value">{campaign.followup2TemplateId} (after {campaign.followup2DelayHours}h)</dd>
+                  </div>
+                  <div className="campaign-detail-item">
+                    <dt>Daily Limit</dt>
+                    <dd>{campaign.dailyLimit} messages/day</dd>
+                  </div>
+                </dl>
 
-          {!campaign && (
-            <button onClick={startCreate}>Create Campaign</button>
-          )}
+                <div className="campaign-actions" title={campaignIsActive ? 'Pause campaign before editing' : ''}>
+                  <Button
+                    variant="secondary"
+                    disabled={campaignIsActive}
+                    onClick={startEdit}
+                  >
+                    Edit
+                  </Button>
+                  {campaignIsActive ? (
+                    <Button
+                      variant="warning"
+                      disabled={statusActionPending}
+                      onClick={() => handleStatusChange('PAUSED')}
+                    >
+                      {statusActionPending ? 'Pausing...' : 'Pause'}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      disabled={statusActionPending}
+                      onClick={() => handleStatusChange('ACTIVE')}
+                    >
+                      {statusActionPending ? 'Activating...' : 'Activate'}
+                    </Button>
+                  )}
+                  <Button variant="secondary" onClick={startCreate}>
+                    Start New Campaign
+                  </Button>
+                </div>
 
-          <section className="send-section">
-            <h2>Trigger a Single Send</h2>
-            <p>Send the initial template to one eligible lead (status: NEW).</p>
+                {campaignIsActive && (
+                  <p className="hint-text">Pause this campaign before editing its configuration.</p>
+                )}
 
-            <div className="form-group">
+                {statusActionError && <div className="alert alert-error">{statusActionError}</div>}
+              </>
+            )}
+
+            {!campaign && (
+              <Button variant="primary" onClick={startCreate}>Create Campaign</Button>
+            )}
+          </section>
+
+          <section className="send-card">
+            <div className="send-card-title">Trigger a Single Send</div>
+            <div className="send-card-subtitle">Send the initial template to one eligible lead (status: NEW).</div>
+
+            <div className="form-group send-lead-picker">
               <label htmlFor="lead-picker">Eligible lead</label>
               <select
                 id="lead-picker"
+                className="token-input"
                 value={selectedLeadId}
                 onChange={(e) => setSelectedLeadId(e.target.value)}
               >
@@ -266,16 +288,23 @@ export default function CampaignPage() {
               </select>
             </div>
 
-            {eligibleLeads.length === 0 && <p>No eligible leads (all leads have already been contacted).</p>}
+            {eligibleLeads.length === 0 && <p className="hint-text">No eligible leads (all leads have already been contacted).</p>}
 
-            <button disabled={!selectedLeadId || sending} onClick={handleSend}>
+            <Button variant="primary" disabled={!selectedLeadId || sending} onClick={handleSend}>
               {sending ? 'Sending...' : 'Send'}
-            </button>
+            </Button>
 
             {sendError && <div className="alert alert-error">{sendError}</div>}
             {sendResult && (
               <div className="alert alert-success">
                 Sent successfully. Message status: {sendResult.status}
+              </div>
+            )}
+
+            {!campaignIsActive && (
+              <div className="alert alert-warning inline-warning">
+                <span className="inline-warning-icon"><WarnIcon /></span>
+                <span>No campaign is currently ACTIVE. Activate a campaign before sending.</span>
               </div>
             )}
           </section>
@@ -297,83 +326,97 @@ interface CampaignFormProps {
 
 function CampaignForm({ form, setForm, onSubmit, onCancel, saving, saveError, isNew }: CampaignFormProps) {
   return (
-    <form onSubmit={onSubmit} className="campaign-form">
-      <h2>{isNew ? 'Create Campaign' : 'Edit Campaign'}</h2>
+    <form onSubmit={onSubmit} className="panel campaign-form">
+      <div className="campaign-form-title">{isNew ? 'Create Campaign' : 'Edit Campaign'}</div>
 
       <div className="form-group">
-        <label htmlFor="name">Name</label>
+        <label htmlFor="name" className="token-label">Name</label>
         <input
           id="name"
           type="text"
           required
+          className="token-input"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor="initial-template">Initial Template ID</label>
+      <div className="campaign-form-step">
+        <div className="campaign-form-eyebrow">Step 1 · Initial Message</div>
+        <label htmlFor="initial-template" className="token-label">Initial Template ID</label>
         <input
           id="initial-template"
           type="text"
           required
+          className="token-input"
           value={form.initialTemplateId}
           onChange={(e) => setForm({ ...form, initialTemplateId: e.target.value })}
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor="followup1-template">Follow-up 1 Template ID</label>
-        <input
-          id="followup1-template"
-          type="text"
-          required
-          value={form.followup1TemplateId}
-          onChange={(e) => setForm({ ...form, followup1TemplateId: e.target.value })}
-        />
+      <div className="campaign-form-step campaign-form-step-grid">
+        <div className="campaign-form-eyebrow campaign-form-eyebrow-full">Step 2 · Follow-up 1</div>
+        <div>
+          <label htmlFor="followup1-template" className="token-label">Follow-up 1 Template ID</label>
+          <input
+            id="followup1-template"
+            type="text"
+            required
+            className="token-input"
+            value={form.followup1TemplateId}
+            onChange={(e) => setForm({ ...form, followup1TemplateId: e.target.value })}
+          />
+        </div>
+        <div>
+          <label htmlFor="followup1-delay" className="token-label">Delay (hours)</label>
+          <input
+            id="followup1-delay"
+            type="number"
+            min="1"
+            required
+            className="token-input"
+            value={form.followup1DelayHours}
+            onChange={(e) => setForm({ ...form, followup1DelayHours: Number(e.target.value) })}
+          />
+          <div className="input-helper">hours after previous message</div>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="followup1-delay">Follow-up 1 Delay (hours)</label>
-        <input
-          id="followup1-delay"
-          type="number"
-          min="1"
-          required
-          value={form.followup1DelayHours}
-          onChange={(e) => setForm({ ...form, followup1DelayHours: Number(e.target.value) })}
-        />
+      <div className="campaign-form-step campaign-form-step-grid">
+        <div className="campaign-form-eyebrow campaign-form-eyebrow-full">Step 3 · Follow-up 2</div>
+        <div>
+          <label htmlFor="followup2-template" className="token-label">Follow-up 2 Template ID</label>
+          <input
+            id="followup2-template"
+            type="text"
+            required
+            className="token-input"
+            value={form.followup2TemplateId}
+            onChange={(e) => setForm({ ...form, followup2TemplateId: e.target.value })}
+          />
+        </div>
+        <div>
+          <label htmlFor="followup2-delay" className="token-label">Delay (hours)</label>
+          <input
+            id="followup2-delay"
+            type="number"
+            min="1"
+            required
+            className="token-input"
+            value={form.followup2DelayHours}
+            onChange={(e) => setForm({ ...form, followup2DelayHours: Number(e.target.value) })}
+          />
+          <div className="input-helper">hours after previous message</div>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="followup2-template">Follow-up 2 Template ID</label>
-        <input
-          id="followup2-template"
-          type="text"
-          required
-          value={form.followup2TemplateId}
-          onChange={(e) => setForm({ ...form, followup2TemplateId: e.target.value })}
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="followup2-delay">Follow-up 2 Delay (hours)</label>
-        <input
-          id="followup2-delay"
-          type="number"
-          min="1"
-          required
-          value={form.followup2DelayHours}
-          onChange={(e) => setForm({ ...form, followup2DelayHours: Number(e.target.value) })}
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="daily-limit">Daily Limit</label>
+      <div className="campaign-form-step">
+        <label htmlFor="daily-limit" className="token-label">Daily Limit</label>
         <input
           id="daily-limit"
           type="number"
           min="1"
+          className="token-input"
           value={form.dailyLimit ?? ''}
           onChange={(e) => setForm({ ...form, dailyLimit: e.target.value ? Number(e.target.value) : undefined })}
         />
@@ -382,13 +425,13 @@ function CampaignForm({ form, setForm, onSubmit, onCancel, saving, saveError, is
       {saveError && <div className="alert alert-error">{saveError}</div>}
 
       <div className="campaign-actions">
-        <button type="submit" disabled={saving}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? 'Saving...' : 'Save'}
-        </button>
+        </Button>
         {onCancel && (
-          <button type="button" className="button-secondary" onClick={onCancel} disabled={saving}>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={saving}>
             Cancel
-          </button>
+          </Button>
         )}
       </div>
     </form>

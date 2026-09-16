@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError, ConversationDetail, ConversationListItem, ConversationStatus } from '../api'
+import StatusBadge from '../components/StatusBadge'
+import Button from '../components/Button'
+import { EmptyChatIcon, WarnIcon } from '../components/icons'
 
 const PAGE_SIZE = 20
 
@@ -39,15 +42,18 @@ export default function InboxPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
-    <div>
-      <h1>Inbox</h1>
+    <div className="inbox-page">
+      <div className="inbox-page-header">
+        <h1>Inbox</h1>
+        <div className="page-subtitle">Conversations with leads</div>
+      </div>
 
       <div className="inbox-layout">
-        <div className="inbox-list-pane">
-          <div className="form-group">
-            <label htmlFor="conv-status-filter">Filter by status</label>
+        <div className="inbox-list-pane panel">
+          <div className="inbox-filter-bar">
             <select
               id="conv-status-filter"
+              className="filter-select inbox-filter-select"
               value={statusFilter}
               onChange={(e) => handleStatusFilterChange(e.target.value)}
             >
@@ -57,14 +63,14 @@ export default function InboxPage() {
             </select>
           </div>
 
-          {listError && <div className="alert alert-error">{listError}</div>}
+          <div className="conversation-list-scroll">
+            {listError && <div className="alert alert-error inline-alert">{listError}</div>}
 
-          {listLoading ? (
-            <p>Loading...</p>
-          ) : conversations.length === 0 ? (
-            <p>No conversations found.</p>
-          ) : (
-            <>
+            {listLoading ? (
+              <p className="inbox-list-message">Loading...</p>
+            ) : conversations.length === 0 ? (
+              <p className="inbox-list-message">No conversations found.</p>
+            ) : (
               <ul className="conversation-list">
                 {conversations.map((conv) => (
                   <li key={conv.id}>
@@ -73,8 +79,10 @@ export default function InboxPage() {
                       onClick={() => setSelectedId(conv.id)}
                     >
                       <div className="conversation-list-item-header">
-                        <span>{conv.lead.name || conv.lead.phone}</span>
-                        <span className={`status-badge status-${conv.status.toLowerCase()}`}>{conv.status}</span>
+                        <span className={`conversation-list-item-name ${conv.status === 'ACTIVE' ? '' : 'conversation-list-item-name-muted'}`}>
+                          {conv.lead.name || conv.lead.phone}
+                        </span>
+                        <StatusBadge status={conv.status} />
                       </div>
                       <div className="conversation-list-item-sub">
                         {conv.lead.phone}
@@ -84,28 +92,32 @@ export default function InboxPage() {
                   </li>
                 ))}
               </ul>
+            )}
+          </div>
 
-              <div className="pagination">
-                <button className="button-secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                  Previous
-                </button>
-                <span>Page {page} of {totalPages} ({total} total)</span>
-                <button className="button-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                  Next
-                </button>
-              </div>
-            </>
-          )}
+          <div className="inbox-pagination">
+            <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              Previous
+            </Button>
+            <span className="pagination-label">Page {page} of {totalPages} ({total} total)</span>
+            <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              Next
+            </Button>
+          </div>
         </div>
 
-        <div className="inbox-detail-pane">
+        <div className="inbox-detail-pane panel">
           {selectedId ? (
             <ConversationDetailView
               conversationId={selectedId}
               onStatusChanged={loadList}
             />
           ) : (
-            <p>Select a conversation to view its history.</p>
+            <div className="panel-empty-state inbox-detail-empty">
+              <div className="panel-empty-icon"><EmptyChatIcon /></div>
+              <div className="panel-empty-title">No conversation selected</div>
+              <div className="panel-empty-subtitle">Select a conversation to view its history.</div>
+            </div>
           )}
         </div>
       </div>
@@ -182,37 +194,38 @@ function ConversationDetailView({
     }
   }
 
-  if (loading) return <p>Loading...</p>
-  if (loadError) return <div className="alert alert-error">{loadError}</div>
+  if (loading) return <div className="inbox-detail-empty"><p>Loading...</p></div>
+  if (loadError) return <div className="inbox-detail-empty"><div className="alert alert-error">{loadError}</div></div>
   if (!conversation) return null
 
   const messages = conversation.lead.messages
   const withinWindow = conversation.withinCustomerServiceWindow
 
   return (
-    <div>
+    <div className="conversation-detail">
       <div className="conversation-detail-header">
-        <div>
-          <h2>{conversation.lead.name || conversation.lead.phone}</h2>
-          <p className="hint-text">{conversation.lead.phone}</p>
+        <div className="conversation-detail-heading">
+          <div>
+            <h2>{conversation.lead.name || conversation.lead.phone}</h2>
+            <p className="conversation-detail-phone">{conversation.lead.phone}</p>
+          </div>
+          <StatusBadge status={conversation.status} />
         </div>
-        <div className="campaign-actions">
-          <span className={`status-badge status-${conversation.status.toLowerCase()}`}>{conversation.status}</span>
-          <button
-            className="button-secondary"
-            disabled={conversation.status === 'CLOSED' || closing}
-            onClick={handleClose}
-          >
-            {conversation.status === 'CLOSED' ? 'Closed' : closing ? 'Closing...' : 'Mark Closed'}
-          </button>
-        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={conversation.status === 'CLOSED' || closing}
+          onClick={handleClose}
+        >
+          {conversation.status === 'CLOSED' ? 'Closed' : closing ? 'Closing...' : 'Mark Closed'}
+        </Button>
       </div>
 
-      {closeError && <div className="alert alert-error">{closeError}</div>}
+      {closeError && <div className="alert alert-error inline-alert">{closeError}</div>}
 
       <div className="message-history">
         {messages.length === 0 ? (
-          <p>No messages yet.</p>
+          <p className="inbox-list-message">No messages yet.</p>
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className={`message-row message-${msg.direction.toLowerCase()}`}>
@@ -228,28 +241,30 @@ function ConversationDetailView({
         )}
       </div>
 
-      {withinWindow ? (
-        <form onSubmit={handleReply} className="reply-box">
-          <div className="form-group">
-            <label htmlFor="reply-text">Reply</label>
-            <textarea
-              id="reply-text"
-              rows={3}
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              disabled={sending}
-            />
+      <div className="reply-footer">
+        {!withinWindow && (
+          <div className="alert alert-warning inline-warning">
+            <span className="inline-warning-icon"><WarnIcon /></span>
+            <span>Reply window closed — you can only reply within 24 hours of the lead's last message.</span>
           </div>
-          <button type="submit" disabled={sending || !replyText.trim()}>
+        )}
+        <form onSubmit={handleReply} className="reply-box">
+          <textarea
+            id="reply-text"
+            aria-label="Reply"
+            rows={1}
+            placeholder="Type a reply…"
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            disabled={sending || !withinWindow}
+            className="reply-textarea"
+          />
+          <Button type="submit" variant="primary" disabled={sending || !withinWindow || !replyText.trim()}>
             {sending ? 'Sending...' : 'Send'}
-          </button>
-          {replyError && <div className="alert alert-error">Failed to send: {replyError}</div>}
+          </Button>
         </form>
-      ) : (
-        <div className="alert alert-warning">
-          Outside the 24-hour customer service window — no inbound message from this lead in the last 24 hours. A free-text reply cannot be sent.
-        </div>
-      )}
+        {replyError && <div className="alert alert-error inline-alert">Failed to send: {replyError}</div>}
+      </div>
     </div>
   )
 }

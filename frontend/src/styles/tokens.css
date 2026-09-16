@@ -1,0 +1,95 @@
+/* Design tokens extracted from the docs/ui-reference dc.html prototypes */
+
+:root {
+  /* Color: primary (buttons, active nav, CONTACTED badge) */
+  --color-primary: oklch(0.55 0.15 255);
+  --color-primary-ink: oklch(0.5 0.15 255);
+  --color-primary-bg: oklch(0.94 0.03 255);
+  --color-primary-bg-strong: oklch(0.96 0.02 255);
+
+  /* Color: success / green (REPLIED, ACTIVE badge, Activate button) */
+  --color-success: oklch(0.5 0.14 150);
+  --color-success-ink: oklch(0.5 0.14 150);
+  --color-success-bg: oklch(0.94 0.035 150);
+
+  /* Color: warning / amber (FOLLOWUP_SENT, PAUSED badge, Pause button, warning banners) */
+  --color-warning: oklch(0.55 0.14 75);
+  --color-warning-ink: oklch(0.52 0.13 75);
+  --color-warning-bg: oklch(0.94 0.04 75);
+  --color-warning-border: oklch(0.88 0.05 75);
+
+  /* Color: error / red (FAILED badge, enabled Delete button on NEW leads) */
+  --color-error: oklch(0.55 0.17 25);
+  --color-error-ink: oklch(0.55 0.17 25);
+  --color-error-bg: oklch(0.95 0.035 25);
+  --color-error-border: oklch(0.88 0.03 25);
+
+  /* Color: neutral gray (NEW badge outline, COMPLETED badge, disabled states) */
+  --color-gray-ink: oklch(0.42 0.01 250);
+  --color-gray-bg: oklch(0.93 0.006 250);
+  --color-slate-ink: oklch(0.55 0.008 250);
+  --color-slate-border: oklch(0.78 0.008 250);
+  --color-charcoal-ink: oklch(0.98 0.004 250);
+  --color-charcoal-bg: oklch(0.4 0.012 250);
+  --color-disabled-bg: oklch(0.96 0.004 250);
+  --color-disabled-ink: oklch(0.68 0.008 250);
+  --color-disabled-border: oklch(0.9 0.006 250);
+
+  /* Color: backgrounds */
+  --color-bg-page: oklch(0.97 0.004 250);
+  --color-bg-card: oklch(1 0 0);
+  --color-bg-card-subtle: oklch(0.985 0.003 250);
+  --color-bg-sidebar: oklch(0.995 0.002 250);
+
+  /* Color: borders */
+  --color-border: oklch(0.9 0.006 250);
+  --color-border-strong: oklch(0.87 0.006 250);
+  --color-border-subtle: oklch(0.93 0.006 250);
+  --color-border-faint: oklch(0.95 0.005 250);
+
+  /* Color: text */
+  --color-text-primary: oklch(0.24 0.015 250);
+  --color-text-heading: oklch(0.22 0.015 250);
+  --color-text-secondary: oklch(0.52 0.012 250);
+  --color-text-muted: oklch(0.58 0.012 250);
+  --color-text-placeholder: oklch(0.65 0.008 250);
+
+  /* Typography */
+  --font-family-base: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'JetBrains Mono', monospace;
+
+  --font-size-h1: 24px;
+  --font-size-h2: 16px;
+  --font-size-body: 14px;
+  --font-size-body-sm: 13.5px;
+  --font-size-caption: 12.5px;
+  --font-size-label: 12.5px;
+  --font-size-eyebrow: 11px;
+  --font-size-badge: 11.5px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Spacing (base unit 2px) */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-9: 18px;
+  --space-10: 20px;
+  --space-12: 24px;
+  --space-14: 28px;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-input: 8px;
+  --radius-badge: 6px;
+  --radius-pill: 9999px;
+}

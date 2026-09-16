@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; background: oklch(0.97 0.004 250); }
+    * { box-sizing: border-box; }
+    ::selection { background: oklch(0.9 0.03 255); }
+  </style>
+</helmet>
+
+<div style="display:flex; min-height:100vh; font-family:'Figtree',sans-serif; color:oklch(0.24 0.015 250);">
+
+  <!-- Sidebar -->
+  <div style="width:240px; flex:none; background:oklch(0.995 0.002 250); border-right:1px solid oklch(0.9 0.006 250); display:flex; flex-direction:column; padding:24px 16px;">
+
+    <div style="display:flex; align-items:center; gap:10px; padding:4px 10px 28px;">
+      <div style="width:30px; height:30px; border-radius:8px; background:oklch(0.55 0.15 255); display:flex; align-items:center; justify-content:center; flex:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+          <path d="M4 15 C4 9 8 5 12 5 C16 5 20 9 20 15 L20 17 L4 17 Z" />
+          <path d="M9 17 L9 19 L15 19 L15 17" />
+        </svg>
+      </div>
+      <div style="font-weight:800; font-size:15px; letter-spacing:-0.01em;">Outreach</div>
+    </div>
+
+    <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+      <div style="{{ item.rowStyle }}">
+        <div style="{{ item.iconWrapStyle }}">{{ item.icon }}</div>
+        <div style="{{ item.labelStyle }}">{{ item.label }}</div>
+      </div>
+    </sc-for>
+
+    <div style="flex:1;"></div>
+    <div style="padding:10px; font-size:11px; color:oklch(0.6 0.01 250); font-weight:500;">v1.0 · Local</div>
+  </div>
+
+  <!-- Main -->
+  <div style="flex:1; min-width:0; padding:40px 44px 56px; max-width:1240px;">
+
+    <div style="margin-bottom:28px;">
+      <h1 style="font-size:24px; font-weight:800; margin:0 0 4px; letter-spacing:-0.01em;">Dashboard</h1>
+      <div style="font-size:14px; color:oklch(0.52 0.012 250); font-weight:500;">Overview of your outreach performance</div>
+    </div>
+
+    <!-- Stat cards -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:32px;">
+      <sc-for list="{{ statCards }}" as="card" hint-placeholder-count="6">
+        <div style="{{ card.cardStyle }}">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="{{ card.iconWrapStyle }}">{{ card.icon }}</div>
+            <sc-if value="{{ card.warn }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:10px; font-weight:700; letter-spacing:0.04em; color:oklch(0.55 0.15 25); background:oklch(0.95 0.035 25); padding:3px 7px; border-radius:5px;">ATTENTION</div>
+            </sc-if>
+          </div>
+          <div style="font-size:13px; font-weight:600; color:oklch(0.5 0.012 250); margin-bottom:6px;">{{ card.label }}</div>
+          <div style="{{ card.valueStyle }}">{{ card.value }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Recent activity -->
+    <div style="background:white; border:1px solid oklch(0.9 0.006 250); border-radius:12px; overflow:hidden;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid oklch(0.93 0.006 250);">
+        <div style="font-size:15px; font-weight:700;">Recent Leads</div>
+        <a href="#" style="font-size:13px; font-weight:600; color:oklch(0.55 0.15 255); text-decoration:none;">View all leads →</a>
+      </div>
+
+      <div>
+        <sc-for list="{{ recentLeads }}" as="lead" hint-placeholder-count="6">
+          <div style="display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:18px; padding:14px 22px; border-bottom:1px solid oklch(0.95 0.005 250);">
+            <div style="min-width:0;">
+              <div style="font-size:14px; font-weight:600; margin-bottom:2px;">{{ lead.name }}</div>
+              <div style="font-size:12.5px; color:oklch(0.55 0.01 250); font-family:'JetBrains Mono',monospace;">{{ lead.phone }}</div>
+            </div>
+            <div style="{{ lead.badgeStyle }}">{{ lead.status }}</div>
+            <div style="font-size:12.5px; color:oklch(0.55 0.012 250); font-weight:500; white-space:nowrap; text-align:right; min-width:76px;">{{ lead.time }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{},&quot;showStatIcons&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Stat cards&quot;},&quot;warnOnFailed&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Stat cards&quot;},&quot;activityLimit&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:6,&quot;min&quot;:3,&quot;max&quot;:8,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Recent leads&quot;}}">
+const h = React.createElement;
+function svgIcon(size, children) {
+  return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }, children);
+}
+const ICONS = {
+  dashboard: h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'currentColor' },
+    h('rect', { x: 3, y: 3, width: 7, height: 7, rx: 1.5 }),
+    h('rect', { x: 14, y: 3, width: 7, height: 5, rx: 1.5 }),
+    h('rect', { x: 14, y: 12, width: 7, height: 9, rx: 1.5 }),
+    h('rect', { x: 3, y: 13, width: 7, height: 8, rx: 1.5 })),
+  leads: svgIcon(18, [
+    h('circle', { key: 1, cx: 9, cy: 8, r: 3.2 }),
+    h('path', { key: 2, d: 'M3 20v-1.2C3 15.8 5.7 14 9 14s6 1.8 6 4.8V20' }),
+    h('circle', { key: 3, cx: 17, cy: 8.5, r: 2.4 }),
+    h('path', { key: 4, d: 'M15.5 14.3c2.9.3 5 1.9 5 4.5V20' })
+  ]),
+  campaign: h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8 },
+    h('circle', { cx: 12, cy: 12, r: 9 }),
+    h('circle', { cx: 12, cy: 12, r: 5 }),
+    h('circle', { cx: 12, cy: 12, r: 1, fill: 'currentColor', stroke: 'none' })),
+  inbox: svgIcon(18, [
+    h('rect', { key: 1, x: 3, y: 6, width: 18, height: 14, rx: 2 }),
+    h('polyline', { key: 2, points: '3,7 12,14 21,7' })
+  ]),
+  settings: h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' },
+    h('line', { x1: 4, y1: 6, x2: 20, y2: 6 }),
+    h('circle', { cx: 15, cy: 6, r: 2, fill: 'currentColor', stroke: 'none' }),
+    h('line', { x1: 4, y1: 12, x2: 20, y2: 12 }),
+    h('circle', { cx: 9, cy: 12, r: 2, fill: 'currentColor', stroke: 'none' }),
+    h('line', { x1: 4, y1: 18, x2: 20, y2: 18 }),
+    h('circle', { cx: 17, cy: 18, r: 2, fill: 'currentColor', stroke: 'none' })),
+  people: svgIcon(20, [
+    h('circle', { key: 1, cx: 9, cy: 8, r: 3.2 }),
+    h('path', { key: 2, d: 'M3 20v-1.2C3 15.8 5.7 14 9 14s6 1.8 6 4.8V20' }),
+    h('circle', { key: 3, cx: 17, cy: 8.5, r: 2.4 }),
+    h('path', { key: 4, d: 'M15.5 14.3c2.9.3 5 1.9 5 4.5V20' })
+  ]),
+  chat: svgIcon(20, h('path', { d: 'M4 5h16v11H9l-4 4V5Z' })),
+  check: svgIcon(20, [
+    h('circle', { key: 1, cx: 12, cy: 12, r: 9 }),
+    h('polyline', { key: 2, points: '8,12.5 11,15.5 16,9' })
+  ]),
+  clock: svgIcon(20, [
+    h('circle', { key: 1, cx: 12, cy: 12, r: 9 }),
+    h('line', { key: 2, x1: 12, y1: 7, x2: 12, y2: 12 }),
+    h('line', { key: 3, x1: 12, y1: 12, x2: 15.5, y2: 14 })
+  ]),
+  done: svgIcon(20, [
+    h('rect', { key: 1, x: 4, y: 4, width: 16, height: 16, rx: 4 }),
+    h('polyline', { key: 2, points: '8,12.5 11,15.5 16,9' })
+  ]),
+  alert: svgIcon(20, [
+    h('polygon', { key: 1, points: '12,3 21,20 3,20' }),
+    h('line', { key: 2, x1: 12, y1: 9.5, x2: 12, y2: 14 }),
+    h('circle', { key: 3, cx: 12, cy: 17, r: 0.9, fill: 'currentColor', stroke: 'none' })
+  ])
+};
+
+const TOKENS = {
+  blue:   { ink: 'oklch(0.5 0.15 255)',  bg: 'oklch(0.94 0.03 255)' },
+  green:  { ink: 'oklch(0.5 0.14 150)',  bg: 'oklch(0.94 0.035 150)' },
+  red:    { ink: 'oklch(0.55 0.17 25)',  bg: 'oklch(0.95 0.035 25)' },
+  amber:  { ink: 'oklch(0.52 0.13 75)',  bg: 'oklch(0.94 0.04 75)' },
+  gray:   { ink: 'oklch(0.42 0.01 250)', bg: 'oklch(0.93 0.006 250)' },
+  slate:  { ink: 'oklch(0.55 0.008 250)', bg: 'transparent', border: 'oklch(0.78 0.008 250)' },
+  charcoal: { ink: 'oklch(0.98 0.004 250)', bg: 'oklch(0.4 0.012 250)' }
+};
+
+const STATUS_TOKEN = {
+  NEW: 'slate', CONTACTED: 'blue', REPLIED: 'green',
+  FOLLOWUP_SENT: 'amber', COMPLETED: 'charcoal', FAILED: 'red',
+  ACTIVE: 'green', CLOSED: 'gray'
+};
+const STATUS_LABEL = { FOLLOWUP_SENT: 'FOLLOWUP SENT', COMPLETED: '✓ COMPLETED' };
+
+function badgeStyle(status) {
+  const key = STATUS_TOKEN[status] || 'gray';
+  const t = TOKENS[key];
+  const border = key === 'slate' ? `1px solid ${t.border}` : 'none';
+  return `display:inline-flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; letter-spacing:0.02em; color:${t.ink}; background:${t.bg}; border:${border}; padding:4px 10px; border-radius:6px; white-space:nowrap;`;
+}
+function badgeLabel(status) {
+  return STATUS_LABEL[status] || status;
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const showIcons = this.props.showStatIcons ?? true;
+    const warnOnFailed = this.props.warnOnFailed ?? true;
+    const activityLimit = this.props.activityLimit ?? 6;
+
+    const nav = [
+      { label: 'Dashboard', icon: ICONS.dashboard, active: true },
+      { label: 'Leads', icon: ICONS.leads, active: false },
+      { label: 'Campaign', icon: ICONS.campaign, active: false },
+      { label: 'Inbox', icon: ICONS.inbox, active: false },
+      { label: 'Settings', icon: ICONS.settings, active: false }
+    ];
+    const navItems = nav.map(n => ({
+      label: n.label,
+      icon: n.icon,
+      rowStyle: `display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:8px; margin-bottom:2px; cursor:pointer; font-weight:${n.active ? 700 : 600}; background:${n.active ? 'oklch(0.94 0.03 255)' : 'transparent'};`,
+      iconWrapStyle: `display:flex; color:${n.active ? 'oklch(0.5 0.15 255)' : 'oklch(0.5 0.012 250)'};`,
+      labelStyle: `font-size:14px; color:${n.active ? 'oklch(0.5 0.15 255)' : 'oklch(0.35 0.012 250)'};`
+    }));
+
+    const failedCount = 2;
+    const rawStats = [
+      { label: 'Total Leads', value: 18, icon: ICONS.people, tone: 'blue', warn: false },
+      { label: 'Contacted', value: 6, icon: ICONS.chat, tone: 'blue', warn: false },
+      { label: 'Replied', value: 4, icon: ICONS.check, tone: 'green', warn: false },
+      { label: 'Waiting for Follow-up', value: 3, icon: ICONS.clock, tone: 'amber', warn: false },
+      { label: 'Completed', value: 3, icon: ICONS.done, tone: 'gray', warn: false },
+      { label: 'Failed', value: failedCount, icon: ICONS.alert, tone: 'red', warn: warnOnFailed && failedCount > 0 }
+    ];
+
+    const statCards = rawStats.map(s => {
+      const t = TOKENS[s.warn ? 'red' : s.tone];
+      return {
+        label: s.label,
+        value: s.value,
+        warn: s.warn,
+        icon: showIcons ? s.icon : '',
+        cardStyle: `background:white; border:1px solid ${s.warn ? 'oklch(0.88 0.05 25)' : 'oklch(0.9 0.006 250)'}; border-radius:12px; padding:18px 18px 16px;`,
+        iconWrapStyle: `width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:${t.ink}; background:${t.bg};`,
+        valueStyle: `font-size:28px; font-weight:800; letter-spacing:-0.02em; color:${s.warn ? t.ink : 'oklch(0.22 0.015 250)'};`
+      };
+    });
+
+    const leadsRaw = [
+      { name: 'Maria Chen', phone: '+1 (415) 555-0142', status: 'REPLIED', time: '12 min ago' },
+      { name: 'James Okafor', phone: '+1 (628) 555-0199', status: 'CONTACTED', time: '1 hr ago' },
+      { name: 'Priya Nair', phone: '+1 (510) 555-0173', status: 'NEW', time: '3 hrs ago' },
+      { name: 'David Kim', phone: '+1 (925) 555-0188', status: 'FAILED', time: '5 hrs ago' },
+      { name: 'Sofia Marín', phone: '+1 (650) 555-0121', status: 'FOLLOWUP_SENT', time: 'Yesterday' },
+      { name: 'Tom Becker', phone: '+1 (408) 555-0156', status: 'COMPLETED', time: '2 days ago' }
+    ].slice(0, activityLimit);
+
+    const recentLeads = leadsRaw.map(l => ({ ...l, status: badgeLabel(l.status), badgeStyle: badgeStyle(l.status) }));
+
+    return { navItems, statCards, recentLeads };
+  }
+}
+
+</script>
+</body>
+</html>

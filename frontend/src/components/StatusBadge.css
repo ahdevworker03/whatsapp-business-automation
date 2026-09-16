@@ -1,0 +1,49 @@
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+  border: none;
+}
+
+.status-pill-new {
+  color: var(--color-slate-ink);
+  background: transparent;
+  border: 1px solid var(--color-slate-border);
+}
+
+.status-pill-contacted {
+  color: var(--color-primary-ink);
+  background: var(--color-primary-bg);
+}
+
+.status-pill-followup_sent {
+  color: var(--color-warning-ink);
+  background: var(--color-warning-bg);
+}
+
+.status-pill-replied,
+.status-pill-active {
+  color: var(--color-success-ink);
+  background: var(--color-success-bg);
+}
+
+.status-pill-completed {
+  color: var(--color-charcoal-ink);
+  background: var(--color-charcoal-bg);
+}
+
+.status-pill-failed {
+  color: var(--color-error-ink);
+  background: var(--color-error-bg);
+}
+
+.status-pill-closed {
+  color: var(--color-gray-ink);
+  background: var(--color-gray-bg);
+}

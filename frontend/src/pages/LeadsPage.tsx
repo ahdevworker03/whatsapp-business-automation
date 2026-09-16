@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, ApiError, Lead, LeadStatus, ImportLeadsResult } from '../api'
+import StatusBadge from '../components/StatusBadge'
+import Button from '../components/Button'
+import { UploadIcon, EmptyInboxIcon } from '../components/icons'
 
 const STATUS_OPTIONS: LeadStatus[] = [
   'NEW',
@@ -97,121 +100,124 @@ export default function LeadsPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
-    <div>
-      <h1>Leads</h1>
+    <div className="page-max-leads">
+      <div className="page-header">
+        <h1>Leads</h1>
+        <div className="page-subtitle">{total} total leads</div>
+      </div>
 
-      <section className="import-section">
-        <h2>Import Leads</h2>
-        <div className="form-group">
-          <label htmlFor="lead-file">CSV or Excel file</label>
+      <section className="panel import-panel">
+        <div className="import-panel-label">Import Leads</div>
+        <label htmlFor="lead-file" className={`dropzone ${importing ? 'dropzone-disabled' : ''}`}>
           <input
             ref={fileInputRef}
             id="lead-file"
             type="file"
             accept=".csv,.xlsx"
             disabled={importing}
+            className="dropzone-input"
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) handleImport(file)
             }}
           />
-        </div>
-
-        {importing && <p>Importing...</p>}
+          <span className="dropzone-icon"><UploadIcon /></span>
+          <span className="dropzone-text">
+            {importing ? 'Importing…' : 'Click to browse for a CSV or Excel file'}
+          </span>
+        </label>
 
         {importError && (
-          <div className="alert alert-error">{importError}</div>
+          <div className="alert alert-error inline-alert">{importError}</div>
         )}
 
         {importResult && (
-          <div className="alert alert-success">
+          <div className="alert alert-success inline-alert">
             Imported: {importResult.imported} · Duplicates: {importResult.duplicates} · Failed: {importResult.failed}
           </div>
         )}
       </section>
 
-      <section className="filter-section">
-        <div className="form-group">
-          <label htmlFor="status-filter">Filter by status</label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(e) => handleStatusFilterChange(e.target.value)}
-          >
-            <option value="">All statuses</option>
-            {STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </div>
-      </section>
+      <div className="filter-row">
+        <select
+          id="status-filter"
+          className="filter-select"
+          value={statusFilter}
+          onChange={(e) => handleStatusFilterChange(e.target.value)}
+        >
+          <option value="">All statuses</option>
+          {STATUS_OPTIONS.map((status) => (
+            <option key={status} value={status}>{status}</option>
+          ))}
+        </select>
+      </div>
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : leads.length === 0 ? (
-        <p>No leads found.</p>
-      ) : (
-        <>
-          <table>
-            <thead>
-              <tr>
-                <th>Phone</th>
-                <th>Name</th>
-                <th>Business Name</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map((lead) => (
-                <tr key={lead.id}>
-                  <td>{lead.phone}</td>
-                  <td>{lead.name || '—'}</td>
-                  <td>{lead.businessName || '—'}</td>
-                  <td>
-                    <span className={`status-badge status-${lead.status.toLowerCase()}`}>
-                      {lead.status}
-                    </span>
-                  </td>
-                  <td>{new Date(lead.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button
-                      className="button-secondary"
-                      disabled={deletingId === lead.id}
-                      onClick={() => handleDelete(lead)}
-                    >
-                      {deletingId === lead.id ? 'Deleting...' : 'Delete'}
-                    </button>
-                    {deleteError?.id === lead.id && (
-                      <div className="alert alert-error inline-alert">{deleteError.message}</div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="pagination">
-            <button
-              className="button-secondary"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              Previous
-            </button>
-            <span>Page {page} of {totalPages} ({total} total)</span>
-            <button
-              className="button-secondary"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </button>
+      <div className="panel">
+        {loading ? (
+          <div className="panel-empty-state"><p>Loading...</p></div>
+        ) : leads.length === 0 ? (
+          <div className="panel-empty-state">
+            <div className="panel-empty-icon"><EmptyInboxIcon /></div>
+            <div className="panel-empty-title">No leads yet</div>
+            <div className="panel-empty-subtitle">Import a CSV or Excel file to get started.</div>
           </div>
-        </>
+        ) : (
+          <div className="table-scroll">
+            <table className="leads-table">
+              <thead>
+                <tr>
+                  <th>Phone</th>
+                  <th>Name</th>
+                  <th>Business Name</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th className="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads.map((lead) => {
+                  const contacted = lead.status !== 'NEW'
+                  return (
+                    <tr key={lead.id}>
+                      <td className="mono-cell">{lead.phone}</td>
+                      <td className={lead.name ? '' : 'muted-cell'}>{lead.name || '—'}</td>
+                      <td className={lead.businessName ? '' : 'muted-cell'}>{lead.businessName || '—'}</td>
+                      <td><StatusBadge status={lead.status} /></td>
+                      <td className="muted-cell">{new Date(lead.createdAt).toLocaleDateString()}</td>
+                      <td className="col-actions" title={contacted ? 'Cannot delete a contacted lead' : ''}>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={contacted || deletingId === lead.id}
+                          onClick={() => handleDelete(lead)}
+                        >
+                          {deletingId === lead.id ? 'Deleting...' : 'Delete'}
+                        </Button>
+                        {deleteError?.id === lead.id && (
+                          <div className="alert alert-error inline-alert">{deleteError.message}</div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {!loading && leads.length > 0 && (
+        <div className="pagination">
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            Previous
+          </Button>
+          <span className="pagination-label">Page {page} of {totalPages} ({total} total)</span>
+          <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            Next
+          </Button>
+        </div>
       )}
     </div>
   )
