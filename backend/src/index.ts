@@ -18,8 +18,8 @@ app.use("/api/v1", v1Router);
 
 app.use(errorHandler);
 
-app.listen(env.port, () => {
-  console.log(`Backend listening on port ${env.port} (${env.nodeEnv})`);
+app.listen(env.port, "127.0.0.1", () => {
+  console.log(`Backend listening on 127.0.0.1:${env.port} (${env.nodeEnv})`);
 });
 
 startFollowupScheduler();
