@@ -52,12 +52,12 @@ Minimum requirements for the unit file:
 - Terminates HTTPS (Let's Encrypt via Certbot, auto-renewal via certbot's systemd timer)
 - Reverse-proxies `/api/v1/*` and `/webhook` to the Express service on localhost
 - Serves static frontend files for all other paths, with SPA fallback to `index.html`
-- `/webhook` must NOT be behind the `API_ACCESS_TOKEN` auth layer — that check happens inside Express per 05-api-design.md §11, Nginx just passes the request through
+- `/webhook` must NOT be behind the login-based auth layer — that check happens inside Express per 05-api-design.md §11, Nginx just passes the request through
 - Standard security headers (recommended, not previously specified): `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`
 
 ## 7. Environment Variables and Secrets
 
-Per 03-backend-architecture.md §7:
+Per 03-backend-architecture.md §7, updated 2026-09-19 for the login-based auth scheme in 05-api-design.md §11 (replaces the single-user static token with a login screen backed by the same single shared credential — see the scope note there):
 
 - `PORT`
 - `DATABASE_URL`
@@ -65,13 +65,17 @@ Per 03-backend-architecture.md §7:
 - `META_PHONE_NUMBER_ID`
 - `META_WEBHOOK_VERIFY_TOKEN`
 - `NODE_ENV=production`
-- `API_ACCESS_TOKEN`
+- ~~`API_ACCESS_TOKEN`~~ — removed. Replaced by:
+  - `SESSION_SECRET` — signs the server-side session-ID cookie (decided: server-side sessions, not JWT, per 05-api-design.md §11.4)
+  - `ADMIN_EMAIL` — the single shared login email
+  - `ADMIN_PASSWORD_HASH` — bcrypt hash of the single shared login password, checked at login time (05-api-design.md §11)
 
 Rules:
 
 - `.env` lives on the VPS only, outside the git repo, readable only by the service user (`chmod 600`)
 - Never committed, never logged, never included in deployment scripts in plaintext
 - `META_ACCESS_TOKEN` in particular is a long-lived credential — treat it like a production secret, not a dev convenience
+- `SESSION_SECRET` and `ADMIN_PASSWORD_HASH` follow the same rules — never committed, never logged, `chmod 600`. `SESSION_SECRET` should be a high-entropy generated value, not a memorable password
 
 ## 8. Database
 

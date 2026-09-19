@@ -128,8 +128,40 @@ Templates must be pre-approved by Meta before use. The backend sends templates u
 
 ## 11. API Access Control
 
-- All /api/v1/* routes require a static bearer token, checked via Express middleware.
-- The token is stored in an environment variable (API_ACCESS_TOKEN) and configured once during deployment.
-- This is not a full user authentication system — the project is single-user, so a shared static token is sufficient to prevent public unauthenticated access.
-- The /webhook route does not use this token. It is secured separately via Meta's own webhook verify token (hub.verify_token), matched against META_WEBHOOK_VERIFY_TOKEN.
-- Requests to /api/v1/* without a valid token return 401.
+> **Scope note:** This section reflects a decision made 2026-09-19 to replace the static bearer token with a real login screen, because the client (non-technical) shouldn't have to handle a raw API token pasted into the frontend. This is **not** a multi-user system change: there is still exactly one set of credentials, shared by Abdallah and the client interchangeably. There is no per-person identity, no user table with multiple rows. The system remains single-user/single-role in every sense (project.md §1/§6, 01-system-architecture.md §2/§7 all still apply unchanged) — the only change is the mechanism for proving you're allowed in.
+
+- All `/api/v1/*` routes require the caller to be authenticated via a login session. The static shared bearer token (`API_ACCESS_TOKEN`) described in earlier revisions of this doc is removed.
+- There is exactly **one** fixed credential pair (a single email + password), not a lookup across multiple accounts. Whoever is logging in — Abdallah or the client — submits the same shared credentials.
+- Storage choice: the password is stored **hashed in an environment variable** (`ADMIN_PASSWORD_HASH`, bcrypt or equivalent), checked at login time. This is simpler than a seeded single-row users table for a credential pair that never needs to be looked up by anything other than "does this match the one hash we have" — no table, no migration, no query needed. (If credential rotation via a UI is ever wanted, a single seeded row would be the alternative — not needed for MVP.)
+
+### 11.1 Login Endpoint
+
+**POST /api/v1/auth/login**
+- Request body: `{ email: string, password: string }`
+- Verifies the submitted email+password against the single stored credential pair (`ADMIN_EMAIL` env var or hardcoded constant, plus `ADMIN_PASSWORD_HASH` — see §11.4).
+- Response 200: sets an `HttpOnly` session cookie and returns `{ ok: true }`.
+- Response 401 on invalid credentials.
+
+**POST /api/v1/auth/logout**
+- Destroys the current session.
+- Response 200.
+
+There is no signup endpoint and no account provisioning step — the one credential pair is configured once via environment variable, not created through the API.
+
+### 11.2 Middleware Change
+
+- The existing `/api/v1/*` Express middleware that checked `API_ACCESS_TOKEN` is replaced with session middleware that verifies the session cookie issued by `POST /api/v1/auth/login` against the server-side session store.
+- Requests to `/api/v1/*` without a valid, unexpired session return 401, same as before.
+- There is nothing to resolve the session to besides "valid" or not — no user record, no role, no per-caller data — since both real people share the one session-worthy identity.
+
+### 11.3 Webhook Unaffected
+
+- `/webhook` (§9) is unchanged and stays outside this auth layer, exactly as before. It continues to be secured separately via Meta's own `hub.verify_token`, matched against `META_WEBHOOK_VERIFY_TOKEN`.
+
+### 11.4 Decided — Server-Side Session (not JWT)
+
+Decided by Abdallah: **server-side sessions**, not JWT.
+
+- Session data (session ID → validity/expiry) is kept server-side, in Postgres (no Redis, per 01-system-architecture.md §2's no-Redis constraint) — a single VPS with no horizontal scaling and no third-party API consumers gets no benefit from JWT's statelessness, while sessions make logout/revocation trivial, which a signed JWT would need a denylist to match.
+- The session-ID cookie is `HttpOnly`, signed using `SESSION_SECRET` (see 06-deployment.md §7).
+- (Rationale for rejecting JWT, for reference: JWT avoids server-side session storage but makes revoking access before natural token expiry — e.g. on logout or a credential change — harder without adding a denylist; that tradeoff isn't worth it here.)
