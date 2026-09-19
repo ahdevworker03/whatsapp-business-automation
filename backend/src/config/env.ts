@@ -24,7 +24,13 @@ export const env = {
   get databaseUrl(): string {
     return requireEnv("DATABASE_URL");
   },
-  get apiAccessToken(): string {
-    return requireEnv("API_ACCESS_TOKEN");
+  get adminEmail(): string {
+    return requireEnv("ADMIN_EMAIL");
+  },
+  get adminPasswordHash(): string {
+    return requireEnv("ADMIN_PASSWORD_HASH");
+  },
+  get sessionSecret(): string {
+    return requireEnv("SESSION_SECRET");
   },
 };

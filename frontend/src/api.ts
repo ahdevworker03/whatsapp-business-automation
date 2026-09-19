@@ -16,24 +16,31 @@ class ApiError extends Error {
   }
 }
 
+// Set by App.tsx so any 401 from any call — not just the ones a page
+// explicitly checks for — redirects to /login (docs/development-milestones/
+// 08.5-authentication.md section 7's route-guard requirement).
+let unauthorizedHandler: (() => void) | null = null
+export function setUnauthorizedHandler(fn: (() => void) | null) {
+  unauthorizedHandler = fn
+}
+
 async function apiCall<T>(
   endpoint: string,
   options: ApiOptions = {}
 ): Promise<T> {
-  const token = import.meta.env.VITE_API_TOKEN
-  if (!token) {
-    throw new Error('API_TOKEN not configured')
-  }
-
   const headers: Record<string, string> = {
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
     ...options.headers
   }
 
   const fetchOptions: RequestInit = {
     method: options.method || 'GET',
-    headers
+    headers,
+    // Session-cookie auth (docs/architecture/05-api-design.md section 11)
+    // replaces the old bearer token — the cookie must be sent/received on
+    // every request, including cross-origin ones in local dev (frontend on
+    // :5173, backend on :3000).
+    credentials: 'include'
   }
 
   if (options.body) {
@@ -45,6 +52,9 @@ async function apiCall<T>(
 
   if (!response.ok) {
     const error = data as { error?: string; code?: string }
+    if (response.status === 401) {
+      unauthorizedHandler?.()
+    }
     throw new ApiError(
       response.status,
       error.code,
@@ -56,6 +66,15 @@ async function apiCall<T>(
 }
 
 export const api = {
+  login: (email: string, password: string) =>
+    apiCall<{ ok: true }>('/auth/login', { method: 'POST', body: { email, password } }),
+
+  logout: () =>
+    apiCall<{ ok: true }>('/auth/logout', { method: 'POST' }),
+
+  checkSession: () =>
+    apiCall<{ authenticated: true }>('/auth/me'),
+
   getDashboardStats: () =>
     apiCall<DashboardStats>('/dashboard/stats'),
 
@@ -65,21 +84,21 @@ export const api = {
     ),
 
   importLeads: async (file: File): Promise<ImportLeadsResult> => {
-    const token = import.meta.env.VITE_API_TOKEN
-    if (!token) throw new Error('API_TOKEN not configured')
-
     const formData = new FormData()
     formData.append('file', file)
 
     const response = await fetch(`${API_BASE}/leads/import`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: formData
+      body: formData,
+      credentials: 'include'
     })
     const data = await response.json() as unknown
 
     if (!response.ok) {
       const error = data as { error?: string; code?: string }
+      if (response.status === 401) {
+        unauthorizedHandler?.()
+      }
       throw new ApiError(response.status, error.code, error.error || `HTTP ${response.status}`)
     }
 

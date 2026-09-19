@@ -7,6 +7,10 @@ import { startFollowupScheduler } from "./jobs/followupScheduler";
 
 const app = express();
 
+// Behind Nginx per docs/architecture/06-deployment.md section 3 — needed so
+// Express/express-session see the original request scheme correctly.
+app.set("trust proxy", 1);
+
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
